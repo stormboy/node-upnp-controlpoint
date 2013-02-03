@@ -4,24 +4,28 @@ var UpnpControlPoint = require("./lib/upnp-controlpoint").UpnpControlPoint,
 var handleDevice = function(device) {
 
 	switch(device.deviceType) {
-	case "urn:Belkin:device:controllee:1":
-	// case wemo.WemoControllee.deviceType:
+
+	case wemo.WemoControllee.deviceType:
 		var wemoSwitch = new wemo.WemoControllee(device);
+		wemoSwitch.on("BinaryState", function(value) {
+			console.log("wemo switch state change: " + value);
+		});
 
 		setTimeout(function() {
-			wemoSwitch.change(true);
+			wemoSwitch.setBinaryState(true);
 		}, 4000);
 		setTimeout(function() {
-			wemoSwitch.change(false);
+			wemoSwitch.setBinaryState(false);
 		}, 6000);
-
 		break;
-	// case wemo.WemoSensor.deviceType:
-	case "urn:Belkin:device:sensor:1":
+
+	case wemo.WemoSensor.deviceType:
 		var wemoSensor = new wemo.WemoSensor(device);
+		wemoSensor.on("BinaryState", function(value) {
+			console.log("wemo motion sensor state change: " + value);
+		});
 		break;
 	}
-	
 }
 
 var cp = new UpnpControlPoint();
