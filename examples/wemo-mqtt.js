@@ -1,13 +1,15 @@
 /**
  * Requires mqttjs library
  */
-
 var UpnpControlPoint = require("../lib/upnp-controlpoint").UpnpControlPoint,
 	wemo = require("../lib/wemo"),
 	mqtt = require('mqttjs'),
    	crypto = require('crypto');
 
 var TRACE = true;
+
+// TODO MQTT service discovery
+// TODO publish lifecycle messages
 
 var options = {
     log: true,
@@ -29,6 +31,7 @@ var WemoBinaryMqtt = function(wemo, options) {
 
 	this.wemo = wemo;
 	
+	this.TOPIC_lifecycle   = "/meem/" + wemo.device.uuid + "/lifecycle";
 	this.TOPIC_binaryIn   = "/meem/" + wemo.device.uuid + "/" + options.mqttPaths.binaryIn;		// binary control
 	this.TOPIC_binaryOut  = "/meem/" + wemo.device.uuid + "/" + options.mqttPaths.binaryOut;	// binary state
 
@@ -119,12 +122,13 @@ function init(self, options) {
 			}
 		});
 
-        // connect to MQTT service
+		// connect to MQTT service
 		crypto.randomBytes(24, function(ex, buf) {		// create a random client ID for MQTT
 			var clientId = buf.toString('hex');
 			self.mqttClient.connect({
 				keepalive: 60,
-				client: clientId
+				client: clientId,
+				will : { topic : self.TOPIC_lifecycle, payload : "{ state : \"missing\" }" }
 			});
 		});
 
