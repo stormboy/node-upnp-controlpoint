@@ -1,4 +1,6 @@
 /**
+ * Glue between MQTT and UPnP services.
+ * 
  * Requires mqttjs library
  */
 var UpnpControlPoint = require("../lib/upnp-controlpoint").UpnpControlPoint,
@@ -13,10 +15,14 @@ var TRACE = true;
 
 var options = {
     log: true,
+    
+    // MQTT settings
     mqtt : {
     	"host" : "192.168.0.23",
     	"port" : 1883
     },
+    
+    // MQTT topics
     mqttPaths : {
     	binaryIn   : "binary/in",
     	binaryOut  : "binary/out",
@@ -40,7 +46,7 @@ var WemoBinaryMqtt = function(wemo, options) {
 	this.mqttClient = null;
 	this.pingTimer = null;
 	
-	init(self, options.mqtt);
+	this.init(options.mqtt);
 }
 
 WemoBinaryMqtt.prototype.subscribe = function() {
@@ -59,7 +65,7 @@ WemoBinaryMqtt.prototype.startPing = function() {
     }
     var self = this;
     this.pingTimer = setTimeout(function() {
-        ping(self);
+        self.ping();
     }, 60000);        // make sure we ping the server 
 }
 
@@ -69,19 +75,21 @@ WemoBinaryMqtt.prototype.stopPing = function() {
     }
 }
 
-function ping(self) {
-    if (self.mqttClient) {
+WemoBinaryMqtt.prototype.ping= function() {
+    if (this.mqttClient) {
+        var self = this;
         if (TRACE) {
             console.log("pinging MQTT server");
         }
-        self.mqttClient.pingreq();
-        self.pingTimer = setTimeout(function() {
-            ping(self);
+        this.mqttClient.pingreq();
+        this.pingTimer = setTimeout(function() {
+            self.ping();
         }, 60000);
     }
 }
 
-function init(self, options) {
+WemoBinaryMqtt.prototype.init = function(options) {
+	var self = this
 	
 	console.log("initialise MQTT connection");
 	
@@ -115,10 +123,10 @@ function init(self, options) {
 			// check if message is a request for current value, send response
 			var i = packet.topic.indexOf("?");
 			if (i > 0) {
-				handleContentRequest(self, packet);
+				self.handleContentRequest(packet);
 			}
 			else {
-				handleInput(self, packet);
+				self.handleInput(packet);
 			}
 		});
 
@@ -145,7 +153,8 @@ function init(self, options) {
 }
 
 
-function handleContentRequest(self, packet) {
+WemoBinaryMqtt.prototype.handleContentRequest = function(packet) {
+	var self = this;
 	var i = packet.topic.indexOf("?");
 	var requestTopic = packet.topic.slice(0, i);
 	var responseTopic = packet.payload;
@@ -165,15 +174,17 @@ function handleContentRequest(self, packet) {
  * @param {Object} self
  * @param {Object} packet
  */
-function handleInput(self, packet) {
-	if (packet.topic == self.TOPIC_binaryIn) {
+WemoBinaryMqtt.prototype.handleInput = function(packet) {
+	if (packet.topic == this.TOPIC_binaryIn) {
 		var msg = JSON.parse(packet.payload);
-		self.wemo.setBinaryState(msg.value);
+		this.wemo.setBinaryState(msg.value);
 	}
 	// else unhandled topic
 }
 
-
+/**
+ * Handle discovered UPnP device
+ */
 var handleDevice = function(device) {
 
 	switch(device.deviceType) {
