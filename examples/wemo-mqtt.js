@@ -5,7 +5,7 @@
  */
 var UpnpControlPoint = require("../lib/upnp-controlpoint").UpnpControlPoint,
 	wemo = require("../lib/wemo"),
-	mqtt = require('mqttjs'),
+	mqtt = require('mqtt'),
    	crypto = require('crypto');
 
 var TRACE = true;
@@ -44,7 +44,7 @@ var WemoBinaryMqtt = function(wemo, options) {
 	this.state = { binary : {} };
 
 	this.mqttClient = null;
-	this.pingTimer = null;
+	//this.pingTimer = null;
 	
 	this.init(options.mqtt);
 }
@@ -52,103 +52,104 @@ var WemoBinaryMqtt = function(wemo, options) {
 WemoBinaryMqtt.prototype.subscribe = function() {
 	if (this.mqttClient) {
 		// subscribe to contorl topics
-		this.mqttClient.subscribe({topic: this.TOPIC_binaryIn});
+		if (TRACE) {
+			console.log("MQTT subscribing: " + this.TOPIC_binaryIn)
+		}
+		this.mqttClient.subscribe( this.TOPIC_binaryIn );
 		
 		// subscribe to topics for requests for initial-content (state).
-		this.mqttClient.subscribe({topic: this.TOPIC_binaryOut+"?"});
+		this.mqttClient.subscribe( this.TOPIC_binaryOut+"?" );
 	}
 }
 
-WemoBinaryMqtt.prototype.startPing = function() {
-    if (this.pingTimer) {
-        clearTimeout(this.pingTimer);
-    }
-    var self = this;
-    this.pingTimer = setTimeout(function() {
-        self.ping();
-    }, 60000);        // make sure we ping the server 
-}
-
-WemoBinaryMqtt.prototype.stopPing = function() {
-    if (this.pingTimer) {
-        clearTimeout(this.pingTimer);
-    }
-}
-
-WemoBinaryMqtt.prototype.ping= function() {
-    if (this.mqttClient) {
-        var self = this;
-        if (TRACE) {
-            console.log("pinging MQTT server");
-        }
-        this.mqttClient.pingreq();
-        this.pingTimer = setTimeout(function() {
-            self.ping();
-        }, 60000);
-    }
-}
+//WemoBinaryMqtt.prototype.startPing = function() {
+//    if (this.pingTimer) {
+//        clearTimeout(this.pingTimer);
+//    }
+//    var self = this;
+//    this.pingTimer = setTimeout(function() {
+//        self.ping();
+//    }, 60000);        // make sure we ping the server 
+//}
+//
+//WemoBinaryMqtt.prototype.stopPing = function() {
+//    if (this.pingTimer) {
+//        clearTimeout(this.pingTimer);
+//    }
+//}
+//
+//WemoBinaryMqtt.prototype.ping= function() {
+//    if (this.mqttClient) {
+//        var self = this;
+//        if (TRACE) {
+//            console.log("pinging MQTT server");
+//        }
+//        this.mqttClient.pingreq();
+//        this.pingTimer = setTimeout(function() {
+//            self.ping();
+//        }, 60000);
+//    }
+//}
 
 WemoBinaryMqtt.prototype.init = function(options) {
 	var self = this
 	
 	console.log("initialise MQTT connection");
 	
-	// connect to MQTT service
+	var clientId = crypto.randomBytes(24);
 	
-	mqtt.createClient(options.port, options.host, function(err, client) {
-		self.mqttClient = client;
+	// connect to MQTT service
+	this.mqttClient = mqtt.createClient(options.port, options.host, {
+		keepalive: 10000,
+		client : clientId
+	});
+	
+	// add handlers to MQTT client
+	this.mqttClient.on('connect', function() {
+		console.log('MQTT sessionOpened');
+		self.subscribe();	// subscribe to control and request topics
+	});
+	this.mqttClient.on('close', function() {
+		console.log('MQTT close');
+	});
+	this.mqttClient.on('error', function(e) {
+		console.log('MQTT error: ' + e);
+	});
+	this.mqttClient.addListener('message', function(topic, payload) {
+		// got data from subscribed topic
+		if (TRACE) {
+			console.log('received ' + topic + ' : ' + payload);
+		}
+		var packet = {
+				topic : topic,
+				payload : payload,
+		};
 
-		// add handlers to MQTT client
-		self.mqttClient.on('connack', function(packet) {
-			if (packet.returnCode === 0) {
-				if (TRACE) {
-					console.log('MQTT sessionOpened');
-				}
-				self.subscribe();	// subscribe to control and request topics
-				self.startPing();
-			}
-		});
-		self.mqttClient.on('close', function() {
-			console.log('MQTT close');
-		});
-		self.mqttClient.on('error', function(e) {
-			console.log('MQTT error: ' + e);
-		});
-		self.mqttClient.addListener('publish', function(packet) {
-			// got data from subscribed topic
-			if (TRACE) {
-				console.log('received ' + packet.topic + ' : ' + packet.payload);
-			}
+		// check if message is a request for current value, send response
+		var i = topic.indexOf("?");
+		if (i > 0) {
+			self.handleContentRequest(packet);
+		}
+		else {
+			self.handleInput(packet);
+		}
+	});
 
-			// check if message is a request for current value, send response
-			var i = packet.topic.indexOf("?");
-			if (i > 0) {
-				self.handleContentRequest(packet);
-			}
-			else {
-				self.handleInput(packet);
-			}
-		});
+	// connect to MQTT service
+//	crypto.randomBytes(24, function(ex, buf) {		// create a random client ID for MQTT
+//		var clientId = buf.toString('hex');
+//		self.mqttClient.connect({
+//			keepalive: 60,
+//			client: clientId,
+//			will : { topic : self.TOPIC_lifecycle, payload : "{ state : \"missing\" }" }
+//		});
+//	});
 
-		// connect to MQTT service
-		crypto.randomBytes(24, function(ex, buf) {		// create a random client ID for MQTT
-			var clientId = buf.toString('hex');
-			self.mqttClient.connect({
-				keepalive: 60,
-				client: clientId,
-				will : { topic : self.TOPIC_lifecycle, payload : "{ state : \"missing\" }" }
-			});
-		});
-
-		// add WeMo state handlers	
-		self.wemo.on('BinaryState', function(value) {
-			var v = value == 1 ? true : false;
-			self.state.binary = { value : v };
-			self.mqttClient.publish({
-				topic: self.TOPIC_binaryOut, 
-				payload: JSON.stringify(self.state.binary)
-			});
-		});
+	// add WeMo state handlers	
+	this.wemo.on('BinaryState', function(value) {
+		var v = value == 1 ? true : false;
+		self.state.binary = { value : v };
+		self.mqttClient.publish( self.TOPIC_binaryOut, JSON.stringify(self.state.binary) );
 	});
 }
 
@@ -165,7 +166,7 @@ WemoBinaryMqtt.prototype.handleContentRequest = function(packet) {
 		if (TRACE) {
 			console.log("sending binaryOut content: " + self.state.binary);
 		}
-		self.mqttClient.publish({topic: responseTopic, payload: JSON.stringify(self.state.binary)});
+		self.mqttClient.publish( responseTopic, JSON.stringify(self.state.binary) );
 	}
 }
 

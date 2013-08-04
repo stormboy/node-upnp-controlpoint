@@ -10,7 +10,9 @@
     "upnp-client": "~0.0.1",
     "xml2js": "~0.2.3"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "mqtt": "*"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
