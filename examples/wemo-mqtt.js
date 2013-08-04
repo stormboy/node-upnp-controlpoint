@@ -163,7 +163,7 @@ WemoBinaryMqtt.prototype.handleContentRequest = function(packet) {
 	}
 	if (requestTopic == self.TOPIC_binaryOut) {
 		if (TRACE) {
-			console.log("sending binaryOut content: " + self.state.power);
+			console.log("sending binaryOut content: " + self.state.binary);
 		}
 		self.mqttClient.publish({topic: responseTopic, payload: JSON.stringify(self.state.binary)});
 	}
