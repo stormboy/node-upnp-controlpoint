@@ -50,7 +50,7 @@ var WemoBinaryMqtt = function(wemo, options) {
 	//this.pingTimer = null;
 	
 	this.init(options.mqtt);
-}
+};
 
 WemoBinaryMqtt.prototype.subscribe = function() {
 	if (this.mqttClient) {
@@ -63,16 +63,16 @@ WemoBinaryMqtt.prototype.subscribe = function() {
 		// subscribe to topics for requests for initial-content (state).
 		this.mqttClient.subscribe( this.TOPIC_binaryOut+"?" );
 	}
-}
+};
 
 WemoBinaryMqtt.prototype.init = function(options) {
-	var self = this
+	var self = this;
 	
 	if (TRACE) {
 		console.log("initialise MQTT connection");
 	}
 	
-	var clientId = crypto.randomBytes(24);
+	var clientId = crypto.randomBytes(24).toString("hex");
 	
 	// connect to MQTT service
 	this.mqttClient = mqtt.createClient(options.port, options.host, {
@@ -117,23 +117,13 @@ WemoBinaryMqtt.prototype.init = function(options) {
 		}
 	});
 
-	// connect to MQTT service
-//	crypto.randomBytes(24, function(ex, buf) {		// create a random client ID for MQTT
-//		var clientId = buf.toString('hex');
-//		self.mqttClient.connect({
-//			keepalive: 60,
-//			client: clientId,
-//			will : { topic : self.TOPIC_lifecycle, payload : "{ state : \"missing\" }" }
-//		});
-//	});
-
 	// add WeMo state handlers	
 	this.wemo.on('BinaryState', function(value) {
 		var v = value == 1 ? true : false;
 		self.state.binary = { value : v };
 		self.mqttClient.publish( self.TOPIC_binaryOut, JSON.stringify(self.state.binary) );
 	});
-}
+};
 
 
 WemoBinaryMqtt.prototype.handleContentRequest = function(packet) {
@@ -150,7 +140,7 @@ WemoBinaryMqtt.prototype.handleContentRequest = function(packet) {
 		}
 		self.mqttClient.publish( responseTopic, JSON.stringify(self.state.binary) );
 	}
-}
+};
 
 /**
  * Handle an input MQTT message
@@ -163,7 +153,7 @@ WemoBinaryMqtt.prototype.handleInput = function(packet) {
 		this.wemo.setBinaryState(msg.value);
 	}
 	// else unhandled topic
-}
+};
 
 /**
  * Handle discovered UPnP device
@@ -189,7 +179,7 @@ var handleDevice = function(device) {
 		var wemoMqtt = new WemoBinaryMqtt(wemoSensor, options);
 		break;
 	}
-}
+};
 
 var cp = new UpnpControlPoint();
 

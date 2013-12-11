@@ -4,10 +4,11 @@
   "description": "A UPnP control-point implementation",
   "main": "lib/upnp-controlpoint.js",
   "directories": {
-    "doc": "doc"
+    "lib": "lib",
+    "doc": "doc",
+    "examples": "examples"
   },
   "dependencies": {
-    "upnp-client": "~0.0.1",
     "xml2js": "~0.2.3"
   },
   "devDependencies": {
@@ -18,7 +19,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "github"
+    "url": "https://github.com/stormboy/node-upnp-controlpoint.git"
   },
   "keywords": [
     "UPnP",
