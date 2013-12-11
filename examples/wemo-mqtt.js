@@ -1,3 +1,5 @@
+var util = require("util");
+
 /**
  * Glue between MQTT and UPnP services.
  * 
@@ -9,6 +11,7 @@ var UpnpControlPoint = require("../lib/upnp-controlpoint").UpnpControlPoint,
    	crypto = require('crypto');
 
 var TRACE = true;
+var DETAIL = false;
 
 // TODO MQTT service discovery
 // TODO publish lifecycle messages
@@ -62,39 +65,12 @@ WemoBinaryMqtt.prototype.subscribe = function() {
 	}
 }
 
-//WemoBinaryMqtt.prototype.startPing = function() {
-//    if (this.pingTimer) {
-//        clearTimeout(this.pingTimer);
-//    }
-//    var self = this;
-//    this.pingTimer = setTimeout(function() {
-//        self.ping();
-//    }, 60000);        // make sure we ping the server 
-//}
-//
-//WemoBinaryMqtt.prototype.stopPing = function() {
-//    if (this.pingTimer) {
-//        clearTimeout(this.pingTimer);
-//    }
-//}
-//
-//WemoBinaryMqtt.prototype.ping= function() {
-//    if (this.mqttClient) {
-//        var self = this;
-//        if (TRACE) {
-//            console.log("pinging MQTT server");
-//        }
-//        this.mqttClient.pingreq();
-//        this.pingTimer = setTimeout(function() {
-//            self.ping();
-//        }, 60000);
-//    }
-//}
-
 WemoBinaryMqtt.prototype.init = function(options) {
 	var self = this
 	
-	console.log("initialise MQTT connection");
+	if (TRACE) {
+		console.log("initialise MQTT connection");
+	}
 	
 	var clientId = crypto.randomBytes(24);
 	
@@ -106,14 +82,20 @@ WemoBinaryMqtt.prototype.init = function(options) {
 	
 	// add handlers to MQTT client
 	this.mqttClient.on('connect', function() {
-		console.log('MQTT sessionOpened');
+		if (TRACE) {
+			console.log('MQTT sessionOpened');
+		}
 		self.subscribe();	// subscribe to control and request topics
 	});
 	this.mqttClient.on('close', function() {
-		console.log('MQTT close');
+		if (TRACE) {
+			console.log('MQTT close');
+		}
 	});
 	this.mqttClient.on('error', function(e) {
-		console.log('MQTT error: ' + e);
+		if (TRACE) {
+			console.log('MQTT error: ' + e);
+		}
 	});
 	this.mqttClient.addListener('message', function(topic, payload) {
 		// got data from subscribed topic
@@ -188,6 +170,13 @@ WemoBinaryMqtt.prototype.handleInput = function(packet) {
  */
 var handleDevice = function(device) {
 
+	if (TRACE) {
+		console.log("handling device:" + device.deviceType + " " + device.manufacturer);
+		if (DETAIL) {
+			console.log("handling device:" + util.inspect(device));
+		}
+	}
+	
 	switch(device.deviceType) {
 
 	case wemo.WemoControllee.deviceType:
