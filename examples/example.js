@@ -1,5 +1,5 @@
-var UpnpControlPoint = require("./lib/upnp-controlpoint").UpnpControlPoint,
-	wemo = require("./lib/wemo");
+var UpnpControlPoint = require("../lib/upnp-controlpoint").UpnpControlPoint,
+	wemo = require("../lib/wemo");
 
 var handleDevice = function(device) {
 
