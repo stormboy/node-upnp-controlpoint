@@ -1,8 +1,8 @@
-var UpnpControlPoint = require("../lib/upnp-controlpoint").UpnpControlPoint,
-	wemo = require("../lib/wemo");
+var UpnpControlPoint = require("../lib/upnp-controlpoint").UpnpControlPoint
+  , wemo = require("../lib/wemo");
 
 var handleDevice = function(device) {
-console.log("device type: " + device.deviceType + " location: " + device.location);
+	console.log("device type: " + device.deviceType + " location: " + device.location);
 
 	switch(device.deviceType) {
 
