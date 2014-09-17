@@ -1,6 +1,6 @@
 {
   "name": "upnp-controlpoint",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A UPnP control-point implementation",
   "main": "lib/upnp-controlpoint.js",
   "directories": {
@@ -23,7 +23,7 @@
   },
   "keywords": [
     "UPnP",
-    "Control-Point",
+    "Control Point",
     "WeMo"
   ],
   "author": "Warren Bloomer",
