@@ -21,7 +21,8 @@ var options = {
     
     // MQTT settings
     mqtt : {
-    	"host" : "192.168.0.23",
+    	//"host" : "192.168.0.23",
+    	"host" : "localhost",
     	"port" : 1883
     },
     
